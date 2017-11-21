@@ -1,0 +1,2 @@
+[CXX] tests.cc --> obj32/tests.o
+Makefile:47: recipe for target 'obj32/tests.o' failed
