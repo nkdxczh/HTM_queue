@@ -16,6 +16,7 @@
 #include <cpuid.h>
 #include <unistd.h>
 #include "transactions.h"
+#include "scheduler.h"
 
 std::mutex* locks;
 simplemap_t<int, float> *map;
@@ -23,15 +24,6 @@ int iters;
 int key_max;
 int* durations;
 int* seeds;
-
-int capacity_abort;
-int conflict_abort;
-int other_abort;
-int gl_abort;
-int gl_count;
-int htm_count;
-
-THREAD_MUTEX_T lock;
 
 void deposit(int id){
     srand(seeds[id]);
@@ -232,5 +224,7 @@ void run_custom_tests(config_t& cfg) {
 }
 
 void test_driver(config_t &cfg) {
+    _init();
     run_custom_tests(cfg);
+    _end();
 }
