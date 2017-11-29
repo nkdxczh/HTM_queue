@@ -20,6 +20,7 @@ int htm_count;
 THREAD_MUTEX_T lock;
 
 #define bit_RTM (1 << 11)
+int value;
 
 int check_rtm_support() {
     unsigned int eax, ebx, ecx, edx;
@@ -30,13 +31,22 @@ int check_rtm_support() {
     return 0;
 }
 
+void do_work(){
+    for(int i = 0; i < 20000000; i++) {
+        TM_BEGIN
+            value++;
+        TM_END
+    }
+
+}
+
 int main() {
-    int value = 0;
+    value = 0;
 if(check_rtm_support())
 	cout<<"Nop";
 else
 	cout<<"Yep";
-    //#pragma omp parallel for num_threads(1)
+    #pragma omp parallel for num_threads(1)
     for(int i = 0; i < 20000000; i++) {
         TM_BEGIN
             value++;

@@ -201,6 +201,7 @@ void run_custom_tests(config_t& cfg) {
     }
 
 
+    //--------------------sequential test--------------------- 
     threads[0] = new std::thread(do_work, 0, cfg.threads * iters);
     threads[0]->join();
 

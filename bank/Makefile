@@ -18,7 +18,7 @@ tmp  := $(shell mkdir -p $(ODIR))
 
 # Basic compiler configuration and flags
 CXX      = g++
-CXXFLAGS = -MMD -pthread -mrtm -fopenmp -ggdb -O3 -std=gnu++11 -m$(BITS)
+CXXFLAGS = -MMD -pthread -mrtm -fopenmp -ggdb -O3 -std=gnu++11 -m$(BITS) -I ~/boost_1_61_0
 LDFLAGS	 = -m$(BITS) -lpthread -lrt
 
 # The basenames of the c++ files that this program uses

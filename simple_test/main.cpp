@@ -43,18 +43,12 @@ void do_work(){
     }
 }
 
-int main() {
+int HTM_test() {
     value = 0;
 if(check_rtm_support())
 	cout<<"Nop";
 else
 	cout<<"Yep";
-    /*#pragma omp parallel for num_threads(1)
-    for(int i = 0; i < 20000000; i++) {
-        TM_BEGIN
-            value++;
-        TM_END
-    }*/
 
 	int thread_num = 100;
 	std::thread* threads[thread_num];
