@@ -11,9 +11,9 @@
 
 bool terminate = false;
 int size_q = 100;
-int num_q = 10;
+int num_q = 100;
 int usage_q = 10;
-int delay = 10;
+int delay = 5;
 
 int capacity_abort;
 int conflict_abort;
@@ -98,16 +98,19 @@ void _dispatch(){
 
         usleep(delay);
 
-        if(round > 50){
+        if(round > 500){
             if(contention_level <= low_threshold * tasks){
+                //std::cout << "too soft " << usage_q << " " << delay << " " << contention_level << std::endl;
                 if(usage_q < num_q)usage_q++;
-                else if(delay >= 10) delay -= 10;
+                else if(delay >= 1) delay -= 1;
             }
             else if(contention_level > high_threshold * tasks){
+                std::cout << "too much" << std::endl;
                 if(usage_q > 2)usage_q--;
-                else delay += 10;
+                else delay += 1;
             }
             contention_level = 0;
+            round = 0;
         }
     }
 }
