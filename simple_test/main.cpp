@@ -32,8 +32,8 @@ std::mutex gl_lock;
 #define v_num 8
 
 int value[v_num];
-int thread_num = 8;
-int tasks = 200;
+int thread_num = 4;
+int tasks = 2000;
 
 int check_rtm_support() {
     unsigned int eax, ebx, ecx, edx;
@@ -48,7 +48,7 @@ void do_work_HTM(){
     for(int i = 0; i < tasks; i++) {
         int k = rand() % v_num;
         TM_BEGIN
-            for(int j = 0; j < 100; ++j)value[k]++;
+            for(int j = 0; j < 2000; ++j)value[k]++;
         TM_END
     }
 }
@@ -57,7 +57,7 @@ void do_work_sch_HTM(){
     for(int i = 0; i < tasks; i++) {
         int k = rand() % v_num;
         SCH_TM_BEGIN
-            for(int j = 0; j < 100; ++j)value[k]++;
+            for(int j = 0; j < 2000; ++j)value[k]++;
         SCH_TM_END
     }
 }

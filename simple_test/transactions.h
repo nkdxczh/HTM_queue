@@ -20,7 +20,7 @@ extern THREAD_MUTEX_T o_lock;
 
 # define TM_BEGIN									\
     {												\
-        int tries = 2;      						\
+        int tries = 5;      						\
         while(1){									\
             while(IS_LOCKED(o_lock)){					\
                 __asm__ ( "pause;" );				\

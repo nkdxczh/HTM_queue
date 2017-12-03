@@ -20,7 +20,7 @@ extern std::mutex gl_lock;
 
 #define SCH_TM_BEGIN									\
     {												\
-        int tries = 2;      						\
+        int tries = 5;      						\
         ScheduleBlock sb;\
         while(1){									\
             _contention_manage_begin(sb);\
