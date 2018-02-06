@@ -56,7 +56,7 @@ void do_work_HTM(){
 void do_work_sch_HTM(){
     for(int i = 0; i < tasks; i++) {
         int k = rand() % v_num;
-        SCH_TM_BEGIN
+        SCH_TM_BEGIN(&value[k])
             for(int j = 0; j < 100; ++j)value[k]++;
         SCH_TM_END
     }
