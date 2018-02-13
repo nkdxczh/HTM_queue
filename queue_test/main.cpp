@@ -8,7 +8,6 @@
 
 #include "transactions.h"
 #include "sch_transactions.h"
-#include "scheduler.h"
 
 #include <thread>
 #include <stdlib.h>
@@ -32,8 +31,8 @@ std::mutex gl_lock;
 #define v_num 8
 
 int value[v_num];
-int thread_num = 32;
-int tasks = 2000;
+int thread_num = 16;
+int tasks = 10;
 
 int check_rtm_support() {
     unsigned int eax, ebx, ecx, edx;
@@ -115,7 +114,7 @@ int main() {
     gl_count = 0;
     htm_count = 0;
 
-    _init();
+    SCH_TM_INIT
     gettimeofday(&start, NULL);
 
     for(int i = 0; i < thread_num; ++i){
@@ -126,7 +125,7 @@ int main() {
     }
 
     gettimeofday(&end, NULL);
-    _end();
+    SCH_TM_CLOSE
 
     cout << (end.tv_sec - start.tv_sec) * 1000000 + ((int)end.tv_usec - (int)start.tv_usec) << endl;
 

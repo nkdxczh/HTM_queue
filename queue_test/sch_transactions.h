@@ -2,6 +2,7 @@
 #define SCH_TRANSACTIONS_H
 
 #include <mutex>
+#include "scheduler.h"
 
 extern int capacity_abort;
 extern int conflict_abort;
@@ -18,60 +19,61 @@ extern std::mutex gl_lock;
 #define THREAD_MUTEX_UNLOCK(lock)           pthread_mutex_unlock(&(lock))
 */
 
-#define SCH_TM_BEGIN(ptr)							\
+#define ENQUEUE 2
+#define TRIES 1
+
+#define SCH_TM_BEGIN(ptr)				        \
 {												\
-    int enqueue = 2;                            \
-    bool finish = false;                        \
-    ScheduleBlock sb;                           \
+    int enqueue = ENQUEUE;                      \
+    int tries = 0;      						\
+    SchBlock sb(ptr);                      \
     while(1){									\
-        _contention_manage_begin(sb);           \
-        int tries = 2;      						\
-        while(1){                               \
-            while(IS_LOCKED(gl_lock)){				\
-                __asm__ ( "pause;" );				\
-            } 										\
-            int status = _xbegin();					\
-            if(status == _XBEGIN_STARTED){			\
-                if(IS_LOCKED(gl_lock)){				\
-                    tries--;                        \
-                    _xabort(30);					\
-                }									\
-            }										\
-            if(status & _XABORT_CODE(30)){			\
-                gl_abort++;							\
-                continue;                           \
-            } else if(status & _XABORT_CAPACITY){	\
-                _contention_manage_abort(sb, 0);    \
-                capacity_abort++;					\
-                continue;                           \
-            } else if(status & _XABORT_CONFLICT){	\
-                _contention_manage_abort(sb, 1);    \
-                conflict_abort++;					\
-                continue;                           \
-            } else{									\
-                _contention_manage_abort(sb, 2);    \
-                other_abort++;						\
-                continue;                           \
-            }										\
-            tries--;								\
-            if(tries <= 0){							\
-                if(enqueue <= 0)gl_lock.lock();			            \
-            }										                                       
+        if(tries <= 0 && enqueue > 0){          \
+            tries = TRIES;                      \
+            enqueue--;                          \
+            _contention_manage_begin(sb);       \
+        }                                       \
+        while(IS_LOCKED(gl_lock)){				\
+            __asm__ ( "pause;" );				\
+        } 										\
+        int status = _xbegin();					\
+        if(status == _XBEGIN_STARTED){			\
+            if(IS_LOCKED(gl_lock)){				\
+                _xabort(30);					\
+            }									\
+            break;								\
+        }										\
+        if(status & _XABORT_CODE(30)){			\
+            gl_abort++;							\
+        } else if(status & _XABORT_CAPACITY){	\
+            _contention_manage_abort(sb, 0);    \
+            capacity_abort++;					\
+        } else if(status & _XABORT_CONFLICT){	\
+            _contention_manage_abort(sb, 1);    \
+            conflict_abort++;					\
+        } else{									\
+            _contention_manage_abort(sb, 2);    \
+            other_abort++;						\
+        }										\
+        tries--;								\
+        if(enqueue <= 0 && tries <= 0){			\
+            gl_lock.lock();			            \
+            break;								\
+        }										\
+    }
 
 # define SCH_TM_END								\
-            if(_xtest()){							\
-                _xend();							\
-                htm_count++;						\
-            } else {								\
-                gl_lock.unlock();                   \
-                gl_count++;							\
-            }										\
-            finish = true;                      \
-            break;                                  \
-        }                                           \
-        if(finish)break;                            \
-        enqueue--;                                  \
-    }                                           \
+    if(tries > 0 || enqueue > 0){			    \
+        _xend();								\
+        htm_count++;							\
+    } else {									\
+        gl_lock.unlock();                       \
+        gl_count++;								\
+    }											\
 };
+
+#define SCH_TM_INIT _init();
+
+#define SCH_TM_CLOSE _end();
 
 #endif // TRANSACTIONS_H
