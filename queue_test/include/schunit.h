@@ -3,11 +3,14 @@
 
 #include <iostream>
 #include <mutex>
+#include <atomic>
+#include <map>
+#include <vector>
 
 class SchUnit{
     private:
         std::mutex lock;
-        int count;
+        std::atomic<int> count;
         int queue;
 
     public:
@@ -21,49 +24,82 @@ class SchUnit{
 };
 
 void SchUnit::add(){
-    lock.lock();
 
     count++;
 
-    lock.unlock();
 }
 
 void SchUnit::reset(){
-    lock.lock();
 
     count = 0;
 
-    lock.unlock();
 }
 
 void SchUnit::setQueue(int q){
-    lock.lock();
 
     queue = q;
 
-    lock.unlock();
 }
 
 class SchMap{
     private:
         std::unordered_map<unsigned, SchUnit*> map;
+        std::mutex creation_lock;
 
     public:
-        SchUnit* get(unsigned key, int num_q);
+        SchUnit* get(unsigned key);
+        SchUnit* create(unsigned key, int queue);
+        std::map<int, std::vector<unsigned>, std::greater<int>>* getOrderedView();
 };
 
-SchUnit* SchMap::get(unsigned key, int num_q){
-      std::unordered_map<unsigned,SchUnit*>::const_iterator it = map.find(key);
+SchUnit* SchMap::get(unsigned key){
+    std::unordered_map<unsigned,SchUnit*>::const_iterator it = map.find(key);
 
-      if(it == map.end()){
-          SchUnit* unit = new SchUnit(key % num_q);
-          
-          map.insert({key,unit});
+    if(it == map.end()){
+        return NULL;
+    }
 
-          return unit;
-      }
+    else return it->second;
+}
 
-      else return it->second;
+SchUnit* SchMap::create(unsigned key, int queue){
+    creation_lock.lock();
+
+    auto it = map.find(key);
+    if(it != map.end()){
+        creation_lock.unlock();
+        return it->second;
+    }
+
+    SchUnit* unit = new SchUnit(key);
+    unit->setQueue(queue);
+
+    map.insert({key,unit});
+
+    creation_lock.unlock();
+
+    return unit;
+}
+
+std::map<int, std::vector<unsigned>, std::greater<int>>* SchMap::getOrderedView(){
+    std::map<int, std::vector<unsigned>, std::greater<int>>* res = new std::map<int, std::vector<unsigned>, std::greater<int>>();
+
+    for(auto it = map.begin(); it != map.end(); ++it )
+    {
+        int key = it->second->getCount();
+        unsigned val = it->first;
+        auto target = res->find(key);
+        if(target == res->end()){
+            std::vector<unsigned> newv;
+            newv.push_back(val);
+            res->insert({key, newv});
+        }
+        else{
+            target->second.push_back(val);
+        }
+    }
+
+    return res;
 }
 
 #endif

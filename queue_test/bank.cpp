@@ -9,6 +9,8 @@
 #include "transactions.h"
 #include "sch_transactions.h"
 
+#include "account.h"
+
 #include <thread>
 #include <stdlib.h>
 
@@ -27,12 +29,13 @@ int htm_count;
 THREAD_MUTEX_T o_lock;
 std::mutex gl_lock;
 
-#define bit_RTM (1 << 11)
-#define v_num 100
+int thread_num = 500;
+int tasks = 1000;
 
-int value[v_num];
-int thread_num = 64;
-int tasks = 100;
+int accounts = 5;
+float amount = 100000;
+
+Bank* bank;
 
 int check_rtm_support() {
     unsigned int eax, ebx, ecx, edx;
@@ -43,34 +46,78 @@ int check_rtm_support() {
     return 0;
 }
 
+void do_work_lock(){
+    for(int i = 0; i < tasks; ++i){
+        int op = rand() % 100; 
+        if(op < 101){
+            int a1 = rand() % accounts;
+            int a2 = rand() % accounts;
+            while(a2 != a1)a2 = rand() % accounts;
+            float amount = float(rand() % 100) / 10;
+            int res = bank->transfer(a1, a2, amount);
+            //if(res == 0)std::cout << "TRANSFER: " << a1 << "," << a2 << "," << amount << std::endl;
+        }
+        else{
+            std::cout << "SUM: " << bank->sum() << std::endl;
+        }
+    }
+}
+
 void do_work_HTM(){
-    for(int i = 0; i < tasks; i++) {
-        int k = rand() % v_num;
-        TM_BEGIN
-            for(int j = 0; j < 100; ++j)value[k]++;
-        TM_END
+    for(int i = 0; i < tasks; ++i){
+        int op = rand() % 100; 
+        if(op < 101){
+            int a1 = rand() % accounts;
+            int a2 = rand() % accounts;
+            while(a2 != a1)a2 = rand() % accounts;
+            float amount = float(rand() % 100) / 10;
+            int res;
+            TM_BEGIN
+                res = bank->transfer_lockfree(a1, a2, amount);
+            TM_END
+            //if(res == 0)std::cout << "TRANSFER: " << a1 << "," << a2 << "," << amount << std::endl;
+        }
+        else{
+            float res;
+            TM_BEGIN
+                res = bank->sum_lockfree();
+            TM_END
+            std::cout << "SUM: " << res << std::endl;
+        }
     }
 }
 
 void do_work_sch_HTM(){
-    for(int i = 0; i < tasks; i++) {
-        int k = rand() % v_num;
-        SCH_TM_BEGIN(&value[k])
-            for(int j = 0; j < 100; ++j)value[k]++;
-        SCH_TM_END
+    for(int i = 0; i < tasks; ++i){
+        int op = rand() % 100; 
+        if(op < 101){
+            int a1 = rand() % accounts;
+            int a2 = rand() % accounts;
+            while(a2 != a1)a2 = rand() % accounts;
+            float amount = float(rand() % 100) / 10;
+            int res;
+            SCH_TM_BEGIN(bank->get(a1))
+                res = bank->transfer_lockfree(a1, a2, amount);
+            SCH_TM_END
+            //if(res == 0)std::cout << "TRANSFER: " << a1 << "," << a2 << "," << amount << std::endl;
+        }
+        else{
+            float res;
+            SCH_TM_BEGIN(bank->get(0))
+                res = bank->sum_lockfree();
+            SCH_TM_END
+            std::cout << "SUM: " << res << std::endl;
+        }
     }
 }
 
 int main() {
-    for(int i = 0; i < v_num; ++i)value[i] = 0;
 
+    bank = new Bank(accounts);
     struct timeval start;
     struct timeval end;
 
-    /*if(check_rtm_support())
-        cout<<"Nop";
-    else
-        cout<<"Yep";*/
+    bank->progagate(amount);
 
     /*gettimeofday(&start, NULL);
 
@@ -105,7 +152,6 @@ int main() {
     cout << "Other Aborts " << other_abort << endl;
     cout << "Lock Aborts " << gl_abort << endl;
 
-    for(int i = 0; i < v_num; ++i)value[i] = 0;
 
     capacity_abort = 0;
     conflict_abort = 0;
@@ -113,6 +159,8 @@ int main() {
     gl_abort = 0;
     gl_count = 0;
     htm_count = 0;
+
+    bank->progagate(amount);
 
     SCH_TM_INIT
     gettimeofday(&start, NULL);

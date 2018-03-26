@@ -1,2 +1,2 @@
 all:
-	g++ -g -pthread -mrtm -fopenmp -std=gnu++11 main.cpp -Iinclude -o main
+	g++ -g -ggdb -pthread -mrtm -fopenmp -std=gnu++11 bank.cpp -Iinclude -o bank
